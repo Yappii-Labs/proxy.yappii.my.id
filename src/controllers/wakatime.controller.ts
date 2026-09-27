@@ -36,7 +36,10 @@ export async function getLanguages(req: Request, res: Response) {
     }>(`${WAKATIME_URL}/users/current/stats/all_time`, token);
     res.status(200).json({
       message: 'Languages fetched',
-      data: result.data?.languages ?? [],
+      data: {
+        total: (result.data?.languages ?? []).length,
+        languages: result.data?.languages ?? []
+      },
       errors: null,
     });
   } catch (error) {
