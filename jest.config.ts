@@ -5,6 +5,7 @@ const config: Config = {
   clearMocks: true,
   restoreMocks: true,
   verbose: true,
+  moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
   transform: {
     "^.+\\.tsx?$": [
       "@swc/jest",

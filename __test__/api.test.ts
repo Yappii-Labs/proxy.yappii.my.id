@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import app from '../src/app';
 import request from 'supertest';
+import { clearWakaTimeCache } from '../src/lib/wakatime-cache';
 
 dotenv.config({ path: '.env.local', quiet: true });
 
@@ -54,6 +55,8 @@ const wakatimeRoutes = [
 ];
 
 describe('API', () => {
+  beforeEach(() => clearWakaTimeCache());
+
   it('returns the health response', async () => {
     const response = await request(app).get('/');
 
@@ -88,6 +91,23 @@ describe('API', () => {
       'https://wakatime.com/api/v1/users/current/summaries',
       expect.any(Object),
     );
+  });
+
+  it('reuses cached WakaTime responses for repeated requests', async () => {
+    const fetchMock = jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValue(new Response(JSON.stringify(upstreamResponse)));
+
+    const firstResponse = await request(app)
+      .get('/wakatime/time')
+      .set('x-api-token', apiToken);
+    const secondResponse = await request(app)
+      .get('/wakatime/time')
+      .set('x-api-token', apiToken);
+
+    expect(firstResponse.status).toBe(200);
+    expect(secondResponse.body).toEqual(firstResponse.body);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it.each(wakatimeRoutes)(
