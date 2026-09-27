@@ -2,34 +2,16 @@ import type { Request, Response } from 'express';
 
 const WAKATIME_URL = 'https://wakatime.com/api/v1';
 
-async function fetchWakaTime(
-  url: string,
-  token: string,
-): Promise<Awaited<ReturnType<typeof fetch>>> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 4000);
-
-  try {
-    return await fetch(url, {
-      headers: {
-        Authorization: `Basic ${Buffer.from(token).toString('base64')}`,
-      },
-      signal: controller.signal,
-    });
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
 export async function getStats(req: Request, res: Response) {
   try {
     const { range } = req.params;
     const token = req.headers['x-api-token'] as string;
 
-    const q = await fetchWakaTime(
-      `${WAKATIME_URL}/users/current/stats/${range}`,
-      token,
-    );
+    const q = await fetch(`${WAKATIME_URL}/users/current/stats/${range}`, {
+      headers: {
+        Authorization: `Basic ${Buffer.from(token).toString('base64')}`,
+      },
+    });
 
     const data = await q.json();
     res.status(200).json({
@@ -50,10 +32,13 @@ export async function getStats(req: Request, res: Response) {
 export async function getLanguages(req: Request, res: Response) {
   try {
     const token = req.headers['x-api-token'] as string;
-    const q = await fetchWakaTime(
-      `${WAKATIME_URL}/users/current/stats/all_time`,
-      token,
-    );
+
+    const q = await fetch(`${WAKATIME_URL}/users/current/stats/all_time`, {
+      headers: {
+        Authorization: `Basic ${Buffer.from(token).toString('base64')}`,
+      },
+    });
+
     const result = await q.json();
     res.status(200).json({
       message: 'Languages fetched',
@@ -73,7 +58,13 @@ export async function getLanguages(req: Request, res: Response) {
 export async function getUserTime(req: Request, res: Response) {
   try {
     const token = req.headers['x-api-token'] as string;
-    const q = await fetchWakaTime(`${WAKATIME_URL}/users/current/time`, token);
+
+    const q = await fetch(`${WAKATIME_URL}/users/current/time`, {
+      headers: {
+        Authorization: `Basic ${Buffer.from(token).toString('base64')}`,
+      },
+    });
+
     const data = await q.json();
     res.status(200).json({
       message: 'Time stats fetched',
@@ -101,7 +92,12 @@ export async function getSummaries(req: Request, res: Response) {
     if (end) params.append('end', end as string);
     if (params.toString()) url += `?${params.toString()}`;
 
-    const q = await fetchWakaTime(url, token);
+    const q = await fetch(url, {
+      headers: {
+        Authorization: `Basic ${Buffer.from(token).toString('base64')}`,
+      },
+    });
+  
     const data = await q.json();
     res.status(200).json({
       message: 'Summaries fetched',
@@ -121,10 +117,11 @@ export async function getSummaries(req: Request, res: Response) {
 export async function getAllTimeSinceToday(req: Request, res: Response) {
   try {
     const token = req.headers['x-api-token'] as string;
-    const q = await fetchWakaTime(
-      `${WAKATIME_URL}/users/current/all_time_since_today`,
-      token,
-    );
+    const q = await fetch(`${WAKATIME_URL}/users/current/all_time_since_today`, {
+      headers: {
+        Authorization: `Basic ${Buffer.from(token).toString('base64')}`,
+      },
+    });
 
     const data = await q.json();
     res.status(200).json({
@@ -145,7 +142,11 @@ export async function getAllTimeSinceToday(req: Request, res: Response) {
 export async function getGoals(req: Request, res: Response) {
   try {
     const token = req.headers['x-api-token'] as string;
-    const q = await fetchWakaTime(`${WAKATIME_URL}/users/current/goals`, token);
+    const q = await fetch(`${WAKATIME_URL}/users/current/goals`, {
+      headers: {
+        Authorization: `Basic ${Buffer.from(token).toString('base64')}`,
+      },
+    });
     const data = await q.json();
     res.status(200).json({
       message: 'Goals fetched',
@@ -165,10 +166,11 @@ export async function getGoals(req: Request, res: Response) {
 export async function getProjects(req: Request, res: Response) {
   try {
     const token = req.headers['x-api-token'] as string;
-    const q = await fetchWakaTime(
-      `${WAKATIME_URL}/users/current/projects`,
-      token,
-    );
+    const q = await fetch(`${WAKATIME_URL}/users/current/projects`, {
+      headers: {
+        Authorization: `Basic ${Buffer.from(token).toString('base64')}`,
+      },
+    });
     const data = await q.json();
     res.status(200).json({
       message: 'Projects fetched',
@@ -188,10 +190,11 @@ export async function getProjects(req: Request, res: Response) {
 export async function getLeaders(req: Request, res: Response) {
   try {
     const token = req.headers['x-api-token'] as string;
-    const q = await fetchWakaTime(
-      `${WAKATIME_URL}/users/current/leaders`,
-      token,
-    );
+    const q = await fetch(`${WAKATIME_URL}/users/current/leaders`, {
+      headers: {
+        Authorization: `Basic ${Buffer.from(token).toString('base64')}`,
+      },
+    });
     const data = await q.json();
     res.status(200).json({
       message: 'Leaders fetched',
