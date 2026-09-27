@@ -29,6 +29,9 @@ jobs:
         with:
           node-version: lts/*
           cache: pnpm
+      
+      - name: '@pnpm/approve-builds'
+        run: pnpm approve-builds --yes
 
       - name: '@npm/install-dependencies'
         run: pnpm install --frozen-lockfile
