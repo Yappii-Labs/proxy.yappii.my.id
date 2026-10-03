@@ -9,10 +9,11 @@ import {
   getProjects,
   getLeaders,
 } from '../controllers/wakatime.controller';
+import { requireToken } from '../middlewares/require-token';
 
 const wakatime = Router();
 
-wakatime.get('/stats/:range', getStats);
+wakatime.get('/stats/:range', requireToken, getStats);
 wakatime.get('/languages', getLanguages);
 wakatime.get('/time', getUserTime);
 wakatime.get('/summaries', getSummaries);
