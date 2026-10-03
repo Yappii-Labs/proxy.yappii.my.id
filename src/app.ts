@@ -18,10 +18,14 @@ app.use((req: Request, res: Response, next) => {
   next();
 });
 
-app.get('/api', (req: Request, res: Response) => {
-  res.status(200).json({ message: 'OK' });
-});
-
 app.use('/wakatime', wakatime);
+
+app.use((req: Request, res: Response) => {
+  res.status(404).json({
+    message: 'Route not found',
+    data: null,
+    errors: null,
+  });
+});
 
 export default app;
