@@ -7,6 +7,7 @@ import express, {
 import path from 'path';
 import wakatime from './routes/wakatime.route';
 
+const prefix: string = "api";
 const app: Application = express();
 
 app.use(cors());
@@ -18,7 +19,7 @@ app.use((req: Request, res: Response, next) => {
   next();
 });
 
-app.use('/wakatime', wakatime);
+app.use(`/${prefix}/wakatime`, wakatime);
 
 app.use((req: Request, res: Response) => {
   res.status(404).json({
