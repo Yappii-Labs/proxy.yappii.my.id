@@ -1,0 +1,64 @@
+openapi: 3.0.0
+info:
+  title: Proxy API
+  version: 1.0.0
+  description: Proxy service for WakaTime and GitHub APIs
+
+servers:
+  - url: http://localhost:3000
+    description: Local development
+
+paths:
+  /:
+    get:
+      summary: Health check
+      tags:
+        - General
+      responses:
+        '200':
+          description: Service is running
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: OK
+
+  /wakatime:
+    get:
+      summary: Get WakaTime data
+      tags:
+        - WakaTime
+      parameters:
+        - name: range
+          in: query
+          description: Time range (last_7_days, last_30_days, last_6_months, last_year)
+          schema:
+            type: string
+            default: last_7_days
+      responses:
+        '200':
+          description: WakaTime stats retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+        '500':
+          description: Server error
+
+  /github:
+    get:
+      summary: Get GitHub data
+      tags:
+        - GitHub
+      responses:
+        '200':
+          description: GitHub data retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+        '500':
+          description: Server error
