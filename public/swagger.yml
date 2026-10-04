@@ -5,60 +5,254 @@ info:
   description: Proxy service for WakaTime and GitHub APIs
 
 servers:
-  - url: http://localhost:3000
-    description: Local development
+  - url: https://proxy.yappii.my.id/api
+  - url: http://localhost:3000/api
+
+tags:
+  - name: Wakatime
+    description: Sign Up to wakatime and go to setting [https://wakatime.com/settings/account](https://wakatime.com/settings/account) and copy `Your Secret API Key`
+
+components:
+  securitySchemes:
+    WakaTimeToken:
+      type: apiKey
+      in: header
+      name: x-api-token
+      description: WakaTime Secret API Key. Get from [https://wakatime.com/settings/account](https://wakatime.com/settings/account)
+  
+  responses:
+    SuccessResponse:
+        description: Success
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                data:
+                  type: object
+                errors:
+                  type: array
+    UnauthorizedError:
+      description: Token required
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: Missing API token
+              data:
+                type: object
+                example: null
+              errors:
+                type: array
+    InternalServerError:
+      description: Server error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+              data:
+                type: object
+                example: null
+              errors:
+                type: array
+    InputValidation:
+      description: Input validation
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+              data:
+                type: object
+                example: null
+              errors:
+                type: array
+                example:
+                  - Parameter range is required
 
 paths:
-  /:
+  /wakatime/stats/{range}:
     get:
-      summary: Health check
-      tags:
-        - General
-      responses:
-        '200':
-          description: Service is running
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: OK
-
-  /wakatime:
-    get:
-      summary: Get WakaTime data
-      tags:
-        - WakaTime
+      summary: Get WakaTime stats
+      description: |
+        Require `x-api-token` header with your WakaTime Secret API Key.
+        
+        Get token from: https://wakatime.com/settings/account
+        
+        Path parameter `range` is required (valid values: today, yesterday, last_7_days, last_30_days, last_6_months, last_year).
+      tags: 
+        - Wakatime
       parameters:
         - name: range
-          in: query
-          description: Time range (last_7_days, last_30_days, last_6_months, last_year)
+          in: path
+          required: true
           schema:
             type: string
-            default: last_7_days
+            enum: [all_time, last_days, last_30_days, last_6_months, last_year]
+      security:
+        - WakaTimeToken: []
       responses:
-        '200':
-          description: WakaTime stats retrieved
-          content:
-            application/json:
-              schema:
-                type: object
-        '500':
-          description: Server error
+        200:
+          $ref: '#/components/responses/SuccessResponse'
+        400:
+          $ref: '#/components/responses/InputValidation'
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        500:
+          $ref: '#/components/responses/InternalServerError'
 
-  /github:
+  /wakatime/languages:
     get:
-      summary: Get GitHub data
+      summary: Get WakaTime languages
+      description: |
+        Require `x-api-token` header with your WakaTime Secret API Key.
+        
+        Get token from: https://wakatime.com/settings/account
       tags:
-        - GitHub
+        - Wakatime
+      security:
+        - WakaTimeToken: []
       responses:
-        '200':
-          description: GitHub data retrieved
-          content:
-            application/json:
-              schema:
-                type: object
-        '500':
-          description: Server error
+        200:
+          $ref: '#/components/responses/SuccessResponse'
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        500:
+          $ref: '#/components/responses/InternalServerError'
+
+  /wakatime/time:
+    get:
+      summary: Get WakaTime user time
+      description: |
+        Require `x-api-token` header with your WakaTime Secret API Key.
+        
+        Get token from: https://wakatime.com/settings/account
+      tags:
+        - Wakatime
+      security:
+        - WakaTimeToken: []
+      responses:
+        200:
+          $ref: '#/components/responses/SuccessResponse'
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        500:
+          $ref: '#/components/responses/InternalServerError'
+
+  /wakatime/summaries:
+    get:
+      summary: Get WakaTime summaries
+      description: |
+        Require `x-api-token` header with your WakaTime Secret API Key.
+        
+        Get token from: https://wakatime.com/settings/account
+        
+        Optional query parameters: `start` and `end` (date format).
+      tags:
+        - Wakatime
+      parameters:
+        - name: start
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: end
+          in: query
+          required: false
+          schema:
+            type: string
+      security:
+        - WakaTimeToken: []
+      responses:
+        200:
+          $ref: '#/components/responses/SuccessResponse'
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        500:
+          $ref: '#/components/responses/InternalServerError'
+
+  /wakatime/all-time-since-today:
+    get:
+      summary: Get WakaTime all time since today
+      description: |
+        Require `x-api-token` header with your WakaTime Secret API Key.
+        
+        Get token from: https://wakatime.com/settings/account
+      tags:
+        - Wakatime
+      security:
+        - WakaTimeToken: []
+      responses:
+        200:
+          $ref: '#/components/responses/SuccessResponse'
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        500:
+          $ref: '#/components/responses/InternalServerError'
+
+  /wakatime/goals:
+    get:
+      summary: Get WakaTime goals
+      description: |
+        Require `x-api-token` header with your WakaTime Secret API Key.
+        
+        Get token from: https://wakatime.com/settings/account
+      tags:
+        - Wakatime
+      security:
+        - WakaTimeToken: []
+      responses:
+        200:
+          $ref: '#/components/responses/SuccessResponse'
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        500:
+          $ref: '#/components/responses/InternalServerError'
+
+  /wakatime/projects:
+    get:
+      summary: Get WakaTime projects
+      description: |
+        Require `x-api-token` header with your WakaTime Secret API Key.
+        
+        Get token from: https://wakatime.com/settings/account
+      tags:
+        - Wakatime
+      security:
+        - WakaTimeToken: []
+      responses:
+        200:
+          $ref: '#/components/responses/SuccessResponse'
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        500:
+          $ref: '#/components/responses/InternalServerError'
+
+  /wakatime/leaders:
+    get:
+      summary: Get WakaTime leaders
+      description: |
+        Require `x-api-token` header with your WakaTime Secret API Key.
+        
+        Get token from: https://wakatime.com/settings/account
+      tags:
+        - Wakatime
+      security:
+        - WakaTimeToken: []
+      responses:
+        200:
+          $ref: '#/components/responses/SuccessResponse'
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        500:
+          $ref: '#/components/responses/InternalServerError'
