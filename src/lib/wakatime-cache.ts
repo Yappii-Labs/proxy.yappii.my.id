@@ -1,63 +1,130 @@
 import { createHash } from 'node:crypto';
 
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
-const MAX_CACHE_ENTRIES = 500;
+const STALE_TTL_MS = 24 * 60 * 60 * 1000;
+const MAX_CACHE_ENTRIES = 100;
+const FETCH_TIMEOUT_MS = 10_000;
 
-type CacheEntry = {
-  value: unknown;
+type CacheEntry<T = unknown> = {
+  value: T;
+  createdAt: number;
   expiresAt: number;
+  staleAt: number;
 };
 
 const responseCache = new Map<string, CacheEntry>();
 const pendingRequests = new Map<string, Promise<unknown>>();
 
-export function clearWakaTimeCache() {
-  responseCache.clear();
-  pendingRequests.clear();
-}
-
-export async function fetchWakaTimeJson<T>(url: string, token: string): Promise<T> {
-  const cacheKey = createHash('sha256')
+function getCacheKey(url: string, token: string): string {
+  return createHash('sha256')
     .update(token)
     .update('\0')
     .update(url)
     .digest('hex');
-  const cached = responseCache.get(cacheKey);
+}
 
-  if (cached && cached.expiresAt > Date.now()) {
-    return cached.value as T;
+function cleanupCache() {
+  const now = Date.now();
+
+  for (const [key, entry] of responseCache) {
+    if (entry.staleAt <= now) {
+      responseCache.delete(key);
+    }
   }
-  if (cached) responseCache.delete(cacheKey);
 
-  const pending = pendingRequests.get(cacheKey);
-  if (pending) return pending as Promise<T>;
+  while (responseCache.size > MAX_CACHE_ENTRIES) {
+    const oldestKey = responseCache.keys().next().value;
+
+    if (!oldestKey) break;
+
+    responseCache.delete(oldestKey);
+  }
+}
+
+function setCache<T>(key: string, value: T) {
+  const now = Date.now();
+
+  responseCache.delete(key);
+
+  responseCache.set(key, {
+    value,
+    createdAt: now,
+    expiresAt: now + CACHE_TTL_MS,
+    staleAt: now + STALE_TTL_MS,
+  });
+
+  cleanupCache();
+}
+
+async function fetchFromWakaTime<T>(
+  url: string,
+  token: string,
+  cacheKey: string,
+): Promise<T> {
+  const existingRequest = pendingRequests.get(cacheKey);
+
+  if (existingRequest) {
+    return existingRequest as Promise<T>;
+  }
 
   const request = fetch(url, {
     headers: {
       Authorization: `Basic ${Buffer.from(token).toString('base64')}`,
+      Accept: 'application/json',
     },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   })
     .then(async (response) => {
+      if (!response.ok) {
+        throw new Error(
+          `WakaTime API returned ${response.status} ${response.statusText}`,
+        );
+      }
+
       const value = (await response.json()) as T;
 
-      if (response.ok) {
-        for (const [key, entry] of responseCache) {
-          if (entry.expiresAt <= Date.now()) responseCache.delete(key);
-        }
-        if (responseCache.size >= MAX_CACHE_ENTRIES) {
-          const oldestKey = responseCache.keys().next().value;
-          if (oldestKey) responseCache.delete(oldestKey);
-        }
-        responseCache.set(cacheKey, {
-          value,
-          expiresAt: Date.now() + CACHE_TTL_MS,
-        });
-      }
+      setCache(cacheKey, value);
 
       return value;
     })
-    .finally(() => pendingRequests.delete(cacheKey));
+    .finally(() => {
+      pendingRequests.delete(cacheKey);
+    });
 
   pendingRequests.set(cacheKey, request);
+
   return request;
+}
+
+export async function fetchWakaTimeJson<T>(
+  url: string,
+  token: string,
+): Promise<T> {
+  const cacheKey = getCacheKey(url, token);
+  const cached = responseCache.get(cacheKey);
+
+  if (cached) {
+    const now = Date.now();
+
+    // Cache masih fresh
+    if (cached.expiresAt > now) {
+      return cached.value as T;
+    }
+
+    if (cached.staleAt > now) {
+      void fetchFromWakaTime<T>(url, token, cacheKey).catch(() => {
+      });
+
+      return cached.value as T;
+    }
+
+    responseCache.delete(cacheKey);
+  }
+
+  return fetchFromWakaTime<T>(url, token, cacheKey);
+}
+
+export function clearWakaTimeCache() {
+  responseCache.clear();
+  pendingRequests.clear();
 }

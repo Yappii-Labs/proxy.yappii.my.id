@@ -6,7 +6,7 @@ const WAKATIME_URL = 'https://wakatime.com/api/v1';
 export async function getStats(req: Request, res: Response) {
   try {
     const { range } = req.params;
-    
+
     if (!range) {
       return res.status(400).json({
         message: 'Range parameter is required',
@@ -19,18 +19,28 @@ export async function getStats(req: Request, res: Response) {
 
     const token = req.headers['x-api-token'] as string;
 
-    const data = await fetchWakaTimeJson(
+    const response = await fetchWakaTimeJson<{ data?: unknown }>(
       `${WAKATIME_URL}/users/current/stats/${range}`,
       token,
     );
-    res.status(200).json({
+
+    if (!response?.data) {
+      return res.status(404).json({
+        message: 'Stats data not found',
+        data: null,
+        errors: ['No stats data returned from WakaTime'],
+      });
+    }
+
+    return res.status(200).json({
       message: `Stats fetched for range: ${range}`,
-      data,
+      data: response.data,
       errors: null,
     });
   } catch (error) {
     const err = error as Error;
-    res.status(500).json({
+
+    return res.status(500).json({
       message: err.message,
       data: null,
       errors: err.stack,
