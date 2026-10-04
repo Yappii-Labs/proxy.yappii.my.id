@@ -6,6 +6,17 @@ const WAKATIME_URL = 'https://wakatime.com/api/v1';
 export async function getStats(req: Request, res: Response) {
   try {
     const { range } = req.params;
+    
+    if (!range) {
+      return res.status(400).json({
+        message: 'Range parameter is required',
+        data: null,
+        errors: [
+          'Parameter range is required'
+        ],
+      });
+    }
+
     const token = req.headers['x-api-token'] as string;
 
     const data = await fetchWakaTimeJson(
